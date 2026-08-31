@@ -1,0 +1,105 @@
+﻿services:
+  # ------------------------------------------------------------
+  # 1. BASE DE DATOS: MySQL 8.0
+  # ------------------------------------------------------------
+  mysql:
+    image: mysql:8.0
+    container_name: inventario-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: 
+      MYSQL_ROOT_PASSWORD: 
+      MYSQL_USER: 
+      MYSQL_PASSWORD: 
+    ports:
+      - ":3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - inventario-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ------------------------------------------------------------
+  # 2. CACHÉ & SESIONES: Redis
+  # ------------------------------------------------------------
+  redis-cache:
+    image: redis:7-alpine
+    container_name: inventario-redis
+    restart: unless-stopped
+    ports:
+      - ":6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - inventario-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ------------------------------------------------------------
+  # 3. BACKEND: Spring Boot API
+  # ------------------------------------------------------------
+  api:
+    build:
+      context: ./API-inventariado
+      dockerfile: Dockerfile
+    container_name: inventario-api
+    restart: unless-stopped
+    ports:
+      - ":8082"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis-cache:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/?serverTimezone=UTC&useSSL=false&allowPublicKeyRetrieval=true
+      MYSQL_USER: root
+      MYSQL_PASSWORD: 
+      JWT_SECRET: 
+      REDIS_HOST: redis-cache
+      REDIS_PORT: 6379
+      MAIL_HOST: 
+      MAIL_PORT: 
+      MAIL_USERNAME: 
+      MAIL_PASSWORD: 
+      BACKEND_PORT: 8082
+    networks:
+      - inventario-network
+
+  # ------------------------------------------------------------
+  # 4. FRONTEND: React + Vite + Nginx
+  # ------------------------------------------------------------
+  app:
+    build:
+      context: ./APP-inventariado
+      dockerfile: Dockerfile
+    container_name: inventario-app
+    restart: unless-stopped
+    ports:
+      - ":80"
+    depends_on:
+      - api
+    networks:
+      - inventario-network
+
+# ------------------------------------------------------------
+# VOLÚMENES Y REDES PERSISTENTES
+# ------------------------------------------------------------
+volumes:
+  mysql_data:
+    name: inventario_mysql_data
+  redis_data:
+    name: inventario_redis_data
+
+networks:
+  inventario-network:
+    name: inventario_network
+    driver: bridge

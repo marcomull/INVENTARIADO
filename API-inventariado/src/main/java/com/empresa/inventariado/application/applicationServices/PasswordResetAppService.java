@@ -1,9 +1,10 @@
-package com.empresa.inventariado.application.applicationServices;
+﻿package com.empresa.inventariado.application.applicationServices;
 
 import com.empresa.inventariado.application.service.UserService;
 import com.empresa.inventariado.domain.domainServices.PasswordResetService;
 import com.empresa.inventariado.infrastructure.repository.IUsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -21,6 +22,9 @@ public class PasswordResetAppService {
     @Autowired
     private PasswordResetService passwordResetService;
 
+    @Value("")
+    private String frontendUrl;
+
     public String handleForgotPassword(String email) {
         usuarioRepository.findByCorreo(email).ifPresent(usuario -> {
             String token = UUID.randomUUID().toString();
@@ -28,7 +32,7 @@ public class PasswordResetAppService {
             usuario.setResetPasswordTokenExpiracion(LocalDateTime.now().plusHours(1));
             usuarioRepository.save(usuario);
 
-            String resetLink = "http://localhost:3000/reset-password?token=" + token;
+            String resetLink = frontendUrl + "/reset-password?token=" + token;
             userService.enviarCorreoReseteo(usuario.getCorreo(), usuario.getNombre(), resetLink);
         });
 

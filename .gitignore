@@ -4,8 +4,7 @@
 *.env
 
 # Backend (Java / Maven)
-API-inventariado/target/
-api/target/
+backend/target/
 target/
 *.class
 *.jar
@@ -13,11 +12,9 @@ target/
 .mvn/wrapper/maven-wrapper.jar
 
 # Frontend (Node / Vite)
-APP-inventariado/node_modules/
-APP-inventariado/dist/
-APP-inventariado/dist-ssr/
-app/node_modules/
-app/dist/
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
 node_modules/
 dist/
 dist-ssr/

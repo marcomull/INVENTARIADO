@@ -46,11 +46,11 @@
   # ------------------------------------------------------------
   # 3. BACKEND: Spring Boot API
   # ------------------------------------------------------------
-  api:
+  backend:
     build:
-      context: ./API-inventariado
+      context: ./backend
       dockerfile: Dockerfile
-    container_name: inventario-api
+    container_name: inventario-backend
     restart: unless-stopped
     ports:
       - ":8082"
@@ -77,16 +77,16 @@
   # ------------------------------------------------------------
   # 4. FRONTEND: React + Vite + Nginx
   # ------------------------------------------------------------
-  app:
+  frontend:
     build:
-      context: ./APP-inventariado
+      context: ./frontend
       dockerfile: Dockerfile
-    container_name: inventario-app
+    container_name: inventario-frontend
     restart: unless-stopped
     ports:
       - ":80"
     depends_on:
-      - api
+      - backend
     networks:
       - inventario-network
 

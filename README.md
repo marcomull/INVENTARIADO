@@ -4,10 +4,23 @@ Plataforma integral de gestión de inventario, ventas, movimientos y administrac
 
 ---
 
+## 📁 Estructura del Proyecto
+
+`	ext
+INVENTARIADO/
+├── backend/          <-- API REST (Java 17, Spring Boot 3, JPA, Security, JWT)
+├── frontend/         <-- Web App (React 18, TypeScript, Vite, Tailwind CSS, Shadcn)
+├── docker-compose.yml
+├── .env.example
+└── README.md
+`
+
+---
+
 ## 🛠️ Stack Tecnológico
 
-- **Frontend (APP-inventariado)**: React 18, TypeScript, Vite, Tailwind CSS, Shadcn UI / Radix, Zustand, Lucide React, Nginx.
-- **Backend (API-inventariado)**: Java 17, Spring Boot 3, Spring Data JPA, Spring Security, JWT (JJWT), Spring Mail.
+- **Frontend (rontend)**: React 18, TypeScript, Vite, Tailwind CSS, Shadcn UI / Radix, Zustand, Lucide React, Nginx.
+- **Backend (ackend)**: Java 17, Spring Boot 3, Spring Data JPA, Spring Security, JWT (JJWT), Spring Mail.
 - **Bases de Datos & Caché**: MySQL 8.0 y Redis 7.
 - **Contenedores**: Docker & Docker Compose.
 
@@ -15,7 +28,7 @@ Plataforma integral de gestión de inventario, ventas, movimientos y administrac
 
 ## 🚀 Inicio Rápido con Docker
 
-### 1. Clonar el repositorio y configurar variables de entorno
+### 1. Configurar variables de entorno
 `ash
 cp .env.example .env
 `
@@ -43,19 +56,17 @@ docker compose down
 
 ---
 
-## 💻 Desarrollo Local (Sin Docker para desarrollo activo)
+## 💻 Desarrollo Local (Sin Docker)
 
 ### Backend (Spring Boot)
-Requiere Java 17+ y Maven:
 `ash
-cd API-inventariado
+cd backend
 ./mvnw spring-boot:run
 `
 
 ### Frontend (React + Vite)
-Requiere Node.js 18+:
 `ash
-cd APP-inventariado
+cd frontend
 npm install
 npm run dev
 `

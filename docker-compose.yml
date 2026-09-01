@@ -45,7 +45,7 @@
       MAIL_PORT: 
       MAIL_USERNAME: 
       MAIL_PASSWORD: 
-      BACKEND_PORT: 8082
+      SERVER_PORT: 8082
     networks:
       - inventario-network
 

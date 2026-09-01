@@ -1,31 +1,6 @@
 ﻿services:
   # ------------------------------------------------------------
-  # 1. BASE DE DATOS: MySQL 8.0
-  # ------------------------------------------------------------
-  mysql:
-    image: mysql:8.0
-    container_name: inventario-mysql
-    restart: unless-stopped
-    environment:
-      MYSQL_DATABASE: 
-      MYSQL_ROOT_PASSWORD: 
-      MYSQL_USER: 
-      MYSQL_PASSWORD: 
-    ports:
-      - ":3306"
-    volumes:
-      - mysql_data:/var/lib/mysql
-    networks:
-      - inventario-network
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-
-  # ------------------------------------------------------------
-  # 2. CACHÉ & SESIONES: Redis
+  # 1. CACHÉ & SESIONES: Redis
   # ------------------------------------------------------------
   redis-cache:
     image: redis:7-alpine
@@ -44,7 +19,7 @@
       retries: 5
 
   # ------------------------------------------------------------
-  # 3. BACKEND: Spring Boot API
+  # 2. BACKEND: Spring Boot API
   # ------------------------------------------------------------
   backend:
     build:
@@ -55,14 +30,14 @@
     ports:
       - ":8082"
     depends_on:
-      mysql:
-        condition: service_healthy
       redis-cache:
         condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/?serverTimezone=UTC&useSSL=false&allowPublicKeyRetrieval=true
-      MYSQL_USER: root
-      MYSQL_PASSWORD: 
+      SPRING_DATASOURCE_URL: jdbc:mysql://:/?serverTimezone=UTC&useSSL=false&allowPublicKeyRetrieval=true
+      DB_USER: 
+      DB_PASS: 
       JWT_SECRET: 
       REDIS_HOST: redis-cache
       REDIS_PORT: 6379
@@ -75,7 +50,7 @@
       - inventario-network
 
   # ------------------------------------------------------------
-  # 4. FRONTEND: React + Vite + Nginx
+  # 3. FRONTEND: React + Vite + Nginx
   # ------------------------------------------------------------
   frontend:
     build:
@@ -94,8 +69,6 @@
 # VOLÚMENES Y REDES PERSISTENTES
 # ------------------------------------------------------------
 volumes:
-  mysql_data:
-    name: inventario_mysql_data
   redis_data:
     name: inventario_redis_data
 

@@ -1,4 +1,4 @@
-﻿package com.empresa.inventariado.application.applicationServices;
+package com.empresa.inventariado.application.applicationServices;
 
 import com.empresa.inventariado.application.service.UserService;
 import com.empresa.inventariado.domain.domainServices.PasswordResetService;

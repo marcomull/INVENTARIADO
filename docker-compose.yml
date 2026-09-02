@@ -36,15 +36,10 @@ services:
       - "host.docker.internal:host-gateway"
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:3306/inventario_empresa?serverTimezone=UTC&useSSL=false&allowPublicKeyRetrieval=true
-      DB_USER: root
-      DB_PASS: root
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      SPRING_DATA_REDIS_HOST: redis-cache
       JWT_SECRET: EstaEsUnaClaveSuperSeguraYDeAlMenos32Caracteres1234
-      REDIS_HOST: redis-cache
-      REDIS_PORT: 6379
-      MAIL_HOST: smtp.gmail.com
-      MAIL_PORT: 465
-      MAIL_USERNAME: marcoarias765@gmail.com
-      MAIL_PASSWORD: uzks zkui dqhl doek
       SERVER_PORT: 8080
     networks:
       - inventario-network

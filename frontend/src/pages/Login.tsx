@@ -25,13 +25,13 @@ export default function Login() {
       toast.error(res.error ?? 'Error al iniciar sesión');
       return;
     }
-    toast.success('¡Bienvenida de vuelta!');
+    toast.success('¡Bienvenido/a de vuelta!');
     navigate('/', { replace: true });
   };
 
   const fillDemo = (mail: string) => {
     setEmail(mail);
-    setPassword('demo1234');
+    setPassword('admin123');
   };
 
   return (
@@ -42,7 +42,7 @@ export default function Login() {
           <Input
             id="email"
             type="email"
-            placeholder="tucorreo@bloom.pe"
+            placeholder="marcoarias765@gmail.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -87,24 +87,24 @@ export default function Login() {
       </form>
 
       <div className="mt-6 pt-6 border-t border-border/60">
-        <p className="text-xs text-muted-foreground mb-3 text-center">Cuentas de demostración</p>
+        <p className="text-xs text-muted-foreground mb-3 text-center">Cuentas disponibles en Base de Datos</p>
         <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
-            onClick={() => fillDemo('admin@bloom.pe')}
+            onClick={() => fillDemo('marcoarias765@gmail.com')}
             className="text-xs px-3 py-2 rounded-lg bg-primary-soft text-primary hover:bg-primary/20 transition-smooth font-medium"
           >
-            👑 Admin
+            👑 Marco (Admin)
           </button>
           <button
             type="button"
-            onClick={() => fillDemo('camila@bloom.pe')}
+            onClick={() => fillDemo('vendedor@inventario.com')}
             className="text-xs px-3 py-2 rounded-lg bg-accent-soft text-accent-foreground hover:bg-accent/30 transition-smooth font-medium"
           >
-            🛍️ Personal
+            🧑‍💼 Vendedor
           </button>
         </div>
-        <p className="text-[10px] text-muted-foreground text-center mt-2">Contraseña demo: <code className="font-mono">demo1234</code></p>
+        <p className="text-[10px] text-muted-foreground text-center mt-2">Contraseña: <code className="font-mono">admin123</code></p>
       </div>
     </PublicLayout>
   );

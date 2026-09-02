@@ -1,17 +1,17 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import type { User, Role } from '@/types';
-import { mockUsers } from '@/lib/mockData';
 
 interface AuthContextValue {
   user: User | null;
   login: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
   logout: () => void;
-  /** Helper de demo: cambia rápidamente entre Admin y Personal */
   switchRole: (role: Role) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 const STORAGE_KEY = 'bloom.auth.user';
+const TOKEN_KEY = 'bloom.auth.token';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(() => {
@@ -29,20 +29,70 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user]);
 
   const login: AuthContextValue['login'] = async (email, password) => {
-    // Mock: cualquier password >= 4 caracteres si el email existe
-    const found = mockUsers.find((u) => u.email.toLowerCase() === email.trim().toLowerCase());
-    if (!found) return { ok: false, error: 'No existe una cuenta con ese correo.' };
-    if (found.status === 'inactive') return { ok: false, error: 'Tu cuenta está desactivada. Contacta al administrador.' };
-    if (password.length < 4) return { ok: false, error: 'Contraseña incorrecta.' };
-    setUser(found);
-    return { ok: true };
+    try {
+      const response = await fetch(API_URL + '/login/usuario', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          correo: email.trim(),
+          contrasena: password,
+        }),
+      });
+
+      if (response.status === 401) {
+        return { ok: false, error: 'Credenciales inválidas. Verifica tu correo y contraseña.' };
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        return { ok: false, error: errorData.error || 'Error al comunicarse con el servidor.' };
+      }
+
+      const data = await response.json();
+      localStorage.setItem(TOKEN_KEY, data.token);
+
+      const loggedUser: User = {
+        id: String(data.id),
+        name: data.correo === 'marcoarias765@gmail.com' ? 'Marco Arias' : data.correo.split('@')[0],
+        email: data.correo,
+        role: data.rol === 'ADMIN' ? 'admin' : 'staff',
+        status: 'active',
+        createdAt: new Date().toISOString(),
+      };
+
+      setUser(loggedUser);
+      return { ok: true };
+    } catch (err) {
+      console.error('Error de conexión:', err);
+      return { ok: false, error: 'No se pudo conectar con el servidor Backend (http://localhost:8080).' };
+    }
   };
 
-  const logout = () => setUser(null);
+  const logout = async () => {
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (token) {
+      try {
+        await fetch(API_URL + '/login/logout', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + token,
+          },
+        });
+      } catch (e) {
+        console.warn('Error al invalidar token en backend:', e);
+      }
+    }
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(STORAGE_KEY);
+    setUser(null);
+  };
 
   const switchRole = (role: Role) => {
-    const target = mockUsers.find((u) => u.role === role && u.status === 'active');
-    if (target) setUser(target);
+    if (user) {
+      setUser({ ...user, role });
+    }
   };
 
   return (

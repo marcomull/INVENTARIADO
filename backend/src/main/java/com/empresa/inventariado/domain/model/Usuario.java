@@ -10,55 +10,56 @@ import java.time.LocalDateTime;
 public class Usuario {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "`idUsuario`")
+    @Column(name = "id_usuario")
     private Integer idUsuario;
 
-    @Column(name = "nombres", nullable = false, length = 150)
+    @Column(name = "nombre", nullable = false, length = 100)
     private String nombre;
 
-    @Column(name = "apellidos", nullable = false, length = 150)
+    @Column(name = "apellido", nullable = false, length = 100)
     private String apellido;
 
-    @Column(name = "telefono", nullable = false, length = 150)
+    @Column(name = "telefono", length = 30)
     private String telefono;
 
-    @Column(name = "dni", nullable = false, length = 150)
+    @Column(name = "dni", length = 20)
     private String dni;
 
-    @Column(name = "direccion", nullable = false, length = 150)
+    @Column(name = "direccion", length = 255)
     private String direccion;
 
-    @Column(nullable = false, unique = true, length = 100)
+    @Column(name = "correo", nullable = false, unique = true, length = 150)
     private String correo;
 
-    @Column(name = "clave_hash", nullable = true, length = 255)
+    @Column(name = "clave_hash", length = 255)
     private String claveHash;
 
     @Column(name = "fecha_registro", updatable = false)
-    private java.time.LocalDateTime fechaRegistro;
+    private LocalDateTime fechaRegistro;
 
     @Enumerated(EnumType.STRING)
-    private Rol rol = Rol.ADMIN;
+    @Column(name = "rol", nullable = false)
+    private Rol rol = Rol.VENDEDOR;
 
     public enum Rol {
         ADMIN, VENDEDOR
     }
 
-    @Column(name = "activo")
+    @Column(name = "activo", nullable = false)
     private Boolean activo = true;
 
-    @Column(name = "verificado")
+    @Column(name = "verificado", nullable = false)
     private Boolean verificado = false;
 
-    @Column(name = "codigo_verificacion")
+    @Column(name = "codigo_verificacion", length = 255)
     private String codigoVerificacion;
 
-    @Column(name = "fecha_expiracion")
-    private java.time.LocalDateTime fechaExpiracionCodigo;
+    @Column(name = "fecha_expiracion_codigo")
+    private LocalDateTime fechaExpiracionCodigo;
 
-    @Column(name = "reset_password_token")
+    @Column(name = "reset_password_token", length = 255)
     private String resetPasswordToken;
 
     @Column(name = "reset_password_token_expiracion")
-    private java.time.LocalDateTime resetPasswordTokenExpiracion;
+    private LocalDateTime resetPasswordTokenExpiracion;
 }

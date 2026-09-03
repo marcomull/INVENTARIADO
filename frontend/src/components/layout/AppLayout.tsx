@@ -1,6 +1,7 @@
 import { Outlet, useLocation, NavLink } from 'react-router-dom';
 import { AppSidebar } from './AppSidebar';
 import { RoleSwitcher } from './RoleSwitcher';
+import { ThemeToggle } from '@/components/shared/ThemeToggle';
 import { useAuth } from '@/contexts/AuthContext';
 import { Bell, Search, LayoutDashboard, Package, ArrowLeftRight, UsersRound, HeartHandshake } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -8,7 +9,7 @@ import { cn } from '@/lib/utils';
 const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   '/': { title: 'Buen día', subtitle: 'Aquí está el resumen de tu negocio.' },
   '/inventory': { title: 'Inventario', subtitle: 'Gestiona tus productos y stock disponible.' },
-  '/movements': { title: 'Movimientos', subtitle: 'Ingresos y salidas registradas.' },
+  '/movements': { title: 'Movimientos', subtitle: 'Ingresos, salidas y devoluciones registradas.' },
   '/staff': { title: 'Personal', subtitle: 'Crea y administra cuentas de tu equipo.' },
   '/customers': { title: 'Clientes', subtitle: 'Próximamente — gestión de clientes y fidelización.' },
 };
@@ -34,7 +35,7 @@ export function AppLayout() {
   })();
 
   return (
-    <div className="relative min-h-screen flex w-full bg-background overflow-hidden">
+    <div className="relative min-h-screen flex w-full bg-background overflow-hidden transition-colors duration-300">
       {/* Fondo decorativo mesh sutil */}
       <div className="absolute inset-0 bg-mesh opacity-60 pointer-events-none" aria-hidden />
       <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full bg-primary/10 blur-3xl pointer-events-none" aria-hidden />
@@ -43,22 +44,26 @@ export function AppLayout() {
       <AppSidebar />
 
       <div className="relative flex-1 flex flex-col min-w-0">
-        <header className="sticky top-0 z-30 backdrop-blur-2xl bg-background/60 border-b border-border/60">
+        <header className="sticky top-0 z-30 backdrop-blur-2xl bg-background/75 border-b border-border/60 transition-colors duration-300">
           <div className="flex items-center justify-between gap-4 px-4 lg:px-8 py-4">
             <div className="min-w-0">
               <h1 className="font-display text-xl lg:text-2xl font-semibold truncate">
-                {location.pathname === '/' ? `${greeting}, ${user?.name.split(' ')[0]} ✨` : meta.title}
+                {location.pathname === '/' ? `${greeting}, ${user?.name?.split(' ')[0] || 'Admin'} ✨` : meta.title}
               </h1>
               <p className="text-xs lg:text-sm text-muted-foreground mt-0.5 truncate">{meta.subtitle}</p>
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
-              <div className="hidden md:flex items-center gap-2 px-3 py-2 rounded-xl bg-muted/60 text-sm text-muted-foreground w-64">
+              <div className="hidden md:flex items-center gap-2 px-3 py-2 rounded-xl bg-muted/60 text-sm text-muted-foreground w-64 border border-border/40">
                 <Search className="w-4 h-4" />
-                <span className="text-xs">Buscar… (Ctrl K)</span>
+                <span className="text-xs">Buscar en catálogo (Ctrl K)</span>
               </div>
-              <button className="relative p-2.5 rounded-xl bg-muted/60 hover:bg-muted transition-smooth" aria-label="Notificaciones">
-                <Bell className="w-4 h-4" />
+
+              {/* Botón de Modo Oscuro / Claro */}
+              <ThemeToggle />
+
+              <button className="relative p-2.5 rounded-xl bg-muted/60 hover:bg-muted border border-border/40 transition-smooth" aria-label="Notificaciones">
+                <Bell className="w-4 h-4 text-foreground/80" />
                 <span className="absolute top-2 right-2.5 w-1.5 h-1.5 rounded-full bg-accent" />
               </button>
             </div>
@@ -83,7 +88,7 @@ export function AppLayout() {
                   to={item.to}
                   className={cn(
                     'flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl text-[10px] font-medium transition-smooth',
-                    active ? 'text-primary' : 'text-muted-foreground'
+                    active ? 'text-primary font-semibold' : 'text-muted-foreground'
                   )}
                 >
                   <Icon className="w-5 h-5" />

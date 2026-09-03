@@ -1,14 +1,19 @@
 import { ReactNode } from 'react';
 import { Sparkles, Smartphone, Coffee, ShieldCheck } from 'lucide-react';
+import { ThemeToggle } from '@/components/shared/ThemeToggle';
 import authBg from '@/assets/auth-bg.jpg';
 
 /**
- * Layout para Login y Recuperar Contraseña.
- * 2026: split visual con imagen aesthetic a la izquierda + formulario glassmórfico a la derecha.
+ * Layout para Login y Recuperar Contraseña con soporte para Modo Claro / Oscuro.
  */
 export function PublicLayout({ children, title, subtitle }: { children: ReactNode; title: string; subtitle: string }) {
   return (
-    <div className="relative min-h-screen w-full overflow-hidden bg-background">
+    <div className="relative min-h-screen w-full overflow-hidden bg-background transition-colors duration-300">
+      {/* Botón flotante para cambiar tema en pantalla de login */}
+      <div className="absolute top-4 right-4 z-50">
+        <ThemeToggle />
+      </div>
+
       {/* Fondo decorativo full-bleed (mobile) */}
       <div
         className="absolute inset-0 bg-cover bg-center lg:hidden opacity-70"
@@ -36,7 +41,7 @@ export function PublicLayout({ children, title, subtitle }: { children: ReactNod
             </div>
             <div>
               <p className="font-display font-bold text-lg leading-none text-foreground">Bloom</p>
-              <p className="text-[11px] text-foreground/70 mt-1">Inventario & Ventas · 2026</p>
+              <p className="text-[11px] text-foreground/70 mt-1">Inventario & Ventas • 2026</p>
             </div>
           </div>
 
@@ -69,7 +74,7 @@ export function PublicLayout({ children, title, subtitle }: { children: ReactNod
           </div>
 
           <p className="relative text-[11px] text-foreground/60">
-            © {new Date().getFullYear()} Bloom · Hecho con cariño en Perú 🇵🇪
+            © {new Date().getFullYear()} Bloom • Hecho con cariño en Perú 🇵🇪
           </p>
         </aside>
 

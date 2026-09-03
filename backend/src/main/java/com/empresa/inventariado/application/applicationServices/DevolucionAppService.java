@@ -1,8 +1,16 @@
 package com.empresa.inventariado.application.applicationServices;
 
 import com.empresa.inventariado.application.dto.DevolucionRequestDTO;
-import com.empresa.inventariado.domain.model.*;
-import com.empresa.inventariado.infrastructure.repository.*;
+import com.empresa.inventariado.application.dto.DevolucionResponseDTO;
+import com.empresa.inventariado.application.mappers.DevolucionMappers;
+import com.empresa.inventariado.domain.interfaceServices.IDevolucionDomainService;
+import com.empresa.inventariado.domain.model.Devolucion;
+import com.empresa.inventariado.domain.model.Producto;
+import com.empresa.inventariado.domain.model.Usuario;
+import com.empresa.inventariado.domain.model.Venta;
+import com.empresa.inventariado.infrastructure.repository.IProductoRepository;
+import com.empresa.inventariado.infrastructure.repository.IUsuarioRepository;
+import com.empresa.inventariado.infrastructure.repository.IVentaRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -15,18 +23,20 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class DevolucionAppService {
 
-    private final IDevolucionRepository devolucionRepository;
+    private final IDevolucionDomainService devolucionDomainService;
+    private final DevolucionMappers devolucionMappers;
     private final IVentaRepository ventaRepository;
     private final IProductoRepository productoRepository;
     private final IUsuarioRepository usuarioRepository;
-    private final IMovimientoInventarioRepository movimientoRepository;
 
-    public Page<Devolucion> listarDevoluciones(Pageable pageable) {
-        return devolucionRepository.findAllByOrderByFechaDevolucionDesc(pageable);
+    @Transactional(readOnly = true)
+    public Page<DevolucionResponseDTO> listarDevoluciones(Pageable pageable) {
+        Page<Devolucion> page = devolucionDomainService.listarPaginado(pageable);
+        return page.map(devolucionMappers::toResponseDTO);
     }
 
     @Transactional
-    public Devolucion registrarDevolucion(DevolucionRequestDTO dto) {
+    public DevolucionResponseDTO registrarDevolucion(DevolucionRequestDTO dto) {
         Venta venta = ventaRepository.findById(dto.getIdVenta())
                 .orElseThrow(() -> new IllegalArgumentException("Venta no encontrada con ID: " + dto.getIdVenta()));
 
@@ -36,61 +46,9 @@ public class DevolucionAppService {
         Usuario usuario = usuarioRepository.findById(dto.getIdUsuario())
                 .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado con ID: " + dto.getIdUsuario()));
 
-        int cantidad = (dto.getCantidad() != null && dto.getCantidad() > 0) ? dto.getCantidad() : 1;
+        Devolucion dev = devolucionMappers.toEntity(dto, venta, producto, usuario);
+        Devolucion procesada = devolucionDomainService.procesarDevolucion(dev);
 
-        Devolucion.MotivoDevolucion motivo = Devolucion.MotivoDevolucion.valueOf(dto.getMotivoDevolucion());
-        Devolucion.DestinoProducto destino = Devolucion.DestinoProducto.valueOf(dto.getDestinoProducto());
-
-        Devolucion dev = new Devolucion();
-        dev.setVenta(venta);
-        dev.setProducto(producto);
-        dev.setUsuario(usuario);
-        dev.setCantidad(cantidad);
-        dev.setMotivoDevolucion(motivo);
-        dev.setDestinoProducto(destino);
-        dev.setObservaciones(dto.getObservaciones());
-
-        Devolucion guardada = devolucionRepository.save(dev);
-
-        // Actualizar estado de la venta
-        venta.setEstado(Venta.EstadoVenta.CON_DEVOLUCION);
-        ventaRepository.save(venta);
-
-        // Trazabilidad en Kardex y Ajuste de Stock
-        int stockAnterior = producto.getStockActual();
-        int stockNuevo = stockAnterior;
-
-        MovimientoInventario.TipoMovimiento tipoMov;
-        String motivoKardex;
-
-        if (destino == Devolucion.DestinoProducto.RETORNA_A_STOCK) {
-            // El producto está intacto y vuelve a ser vendible
-            stockNuevo = stockAnterior + cantidad;
-            producto.setStockActual(stockNuevo);
-            productoRepository.save(producto);
-
-            tipoMov = MovimientoInventario.TipoMovimiento.DEVOLUCION_INGRESO;
-            motivoKardex = "Devolución Venta #" + venta.getCodigoVenta() + ": Retorna a stock (" + motivo + ")";
-        } else if (motivo == Devolucion.MotivoDevolucion.PRODUCTO_VENCIDO) {
-            tipoMov = MovimientoInventario.TipoMovimiento.MERMA_VENCIMIENTO;
-            motivoKardex = "Devolución Venta #" + venta.getCodigoVenta() + ": Merma por vencimiento";
-        } else {
-            // Defecto de fábrica o merma (no entra a stock vendible)
-            tipoMov = MovimientoInventario.TipoMovimiento.MERMA_DEFECTO;
-            motivoKardex = "Devolución Venta #" + venta.getCodigoVenta() + ": Merma por defecto/daño (" + motivo + ")";
-        }
-
-        MovimientoInventario mov = new MovimientoInventario();
-        mov.setProducto(producto);
-        mov.setUsuario(usuario);
-        mov.setTipoMovimiento(tipoMov);
-        mov.setCantidad(cantidad);
-        mov.setStockAnterior(stockAnterior);
-        mov.setStockNuevo(stockNuevo);
-        mov.setMotivo(motivoKardex + " - " + (dto.getObservaciones() != null ? dto.getObservaciones() : ""));
-        movimientoRepository.save(mov);
-
-        log.info("Devolución registrada con éxito: ID {}, Producto: {}, Destino: {}", guardada.getIdDevolucion(), producto.getNombre(), destino);
-        return guardada;
+        return devolucionMappers.toResponseDTO(procesada);
     }
 }

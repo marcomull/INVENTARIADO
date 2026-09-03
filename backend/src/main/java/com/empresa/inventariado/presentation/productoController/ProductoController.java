@@ -1,9 +1,9 @@
 package com.empresa.inventariado.presentation.productoController;
 
 import com.empresa.inventariado.application.applicationServices.ProductoAppService;
+import com.empresa.inventariado.application.dto.LoteProductoDTO;
 import com.empresa.inventariado.application.dto.ProductoDTO;
-import com.empresa.inventariado.domain.model.LoteProducto;
-import com.empresa.inventariado.domain.model.Producto;
+import com.empresa.inventariado.application.dto.ProductoResponseDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -23,34 +23,34 @@ public class ProductoController {
     private final ProductoAppService productoAppService;
 
     @GetMapping
-    public ResponseEntity<Page<Producto>> listar(
+    public ResponseEntity<Page<ProductoResponseDTO>> listar(
             @RequestParam(required = false) String q,
             @PageableDefault(size = 20) Pageable pageable) {
         return ResponseEntity.ok(productoAppService.listarProductos(q, pageable));
     }
 
     @GetMapping("/sugerencias")
-    public ResponseEntity<List<Producto>> sugerenciasTrie(@RequestParam(defaultValue = "") String q) {
+    public ResponseEntity<List<ProductoResponseDTO>> sugerenciasTrie(@RequestParam(defaultValue = "") String q) {
         return ResponseEntity.ok(productoAppService.sugerenciasTrie(q));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Producto> obtenerPorId(@PathVariable Integer id) {
+    public ResponseEntity<ProductoResponseDTO> obtenerPorId(@PathVariable Integer id) {
         return productoAppService.obtenerPorId(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
-    public ResponseEntity<Producto> crear(
+    public ResponseEntity<ProductoResponseDTO> crear(
             @RequestBody ProductoDTO dto,
             @RequestHeader(value = "X-User-Id", required = false) Integer userId) {
-        Producto nuevo = productoAppService.crearProducto(dto, userId != null ? userId : 1);
+        ProductoResponseDTO nuevo = productoAppService.crearProducto(dto, userId != null ? userId : 1);
         return ResponseEntity.status(HttpStatus.CREATED).body(nuevo);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Producto> actualizar(
+    public ResponseEntity<ProductoResponseDTO> actualizar(
             @PathVariable Integer id,
             @RequestBody ProductoDTO dto) {
         return ResponseEntity.ok(productoAppService.actualizarProducto(id, dto));
@@ -63,12 +63,12 @@ public class ProductoController {
     }
 
     @GetMapping("/alertas/stock-bajo")
-    public ResponseEntity<List<Producto>> alertasStockBajo() {
+    public ResponseEntity<List<ProductoResponseDTO>> alertasStockBajo() {
         return ResponseEntity.ok(productoAppService.obtenerAlertasStockBajo());
     }
 
     @GetMapping("/alertas/vencimientos")
-    public ResponseEntity<List<LoteProducto>> alertasVencimientos(
+    public ResponseEntity<List<LoteProductoDTO>> alertasVencimientos(
             @RequestParam(defaultValue = "15") int dias) {
         return ResponseEntity.ok(productoAppService.obtenerAlertasVencimiento(dias));
     }

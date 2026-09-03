@@ -1,9 +1,9 @@
 package com.empresa.inventariado.presentation.catalogoController;
 
 import com.empresa.inventariado.application.applicationServices.CatalogoAppService;
-import com.empresa.inventariado.domain.model.Categoria;
-import com.empresa.inventariado.domain.model.Marca;
-import com.empresa.inventariado.domain.model.ModeloDispositivo;
+import com.empresa.inventariado.application.dto.CategoriaDTO;
+import com.empresa.inventariado.application.dto.MarcaDTO;
+import com.empresa.inventariado.application.dto.ModeloDispositivoDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,32 +20,32 @@ public class CatalogoController {
     private final CatalogoAppService catalogoAppService;
 
     @GetMapping("/categorias")
-    public ResponseEntity<List<Categoria>> listarCategorias(@RequestParam(required = false) String tipo) {
+    public ResponseEntity<List<CategoriaDTO>> listarCategorias(@RequestParam(required = false) String tipo) {
         return ResponseEntity.ok(catalogoAppService.listarCategorias(tipo));
     }
 
     @PostMapping("/categorias")
-    public ResponseEntity<Categoria> crearCategoria(@RequestBody Categoria cat) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(catalogoAppService.crearCategoria(cat));
+    public ResponseEntity<CategoriaDTO> crearCategoria(@RequestBody CategoriaDTO dto) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(catalogoAppService.crearCategoria(dto));
     }
 
     @GetMapping("/marcas")
-    public ResponseEntity<List<Marca>> listarMarcas() {
+    public ResponseEntity<List<MarcaDTO>> listarMarcas() {
         return ResponseEntity.ok(catalogoAppService.listarMarcas());
     }
 
     @PostMapping("/marcas")
-    public ResponseEntity<Marca> crearMarca(@RequestBody Marca marca) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(catalogoAppService.crearMarca(marca));
+    public ResponseEntity<MarcaDTO> crearMarca(@RequestBody MarcaDTO dto) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(catalogoAppService.crearMarca(dto));
     }
 
     @GetMapping("/modelos")
-    public ResponseEntity<List<ModeloDispositivo>> listarModelos(@RequestParam(required = false) Integer idMarca) {
+    public ResponseEntity<List<ModeloDispositivoDTO>> listarModelos(@RequestParam(required = false) Integer idMarca) {
         return ResponseEntity.ok(catalogoAppService.listarModelos(idMarca));
     }
 
     @PostMapping("/modelos")
-    public ResponseEntity<ModeloDispositivo> crearModelo(@RequestBody ModeloDispositivo modelo) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(catalogoAppService.crearModelo(modelo));
+    public ResponseEntity<ModeloDispositivoDTO> crearModelo(@RequestBody ModeloDispositivoDTO dto) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(catalogoAppService.crearModelo(dto));
     }
 }

@@ -1,7 +1,11 @@
 package com.empresa.inventariado.application.applicationServices;
 
+import com.empresa.inventariado.application.dto.LoteProductoDTO;
 import com.empresa.inventariado.application.dto.ProductoDTO;
+import com.empresa.inventariado.application.dto.ProductoResponseDTO;
+import com.empresa.inventariado.application.mappers.ProductoMappers;
 import com.empresa.inventariado.application.service.ProductTrieService;
+import com.empresa.inventariado.domain.interfaceServices.IProductoDomainService;
 import com.empresa.inventariado.domain.model.*;
 import com.empresa.inventariado.infrastructure.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -11,7 +15,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,7 +23,8 @@ import java.util.Optional;
 @Slf4j
 public class ProductoAppService {
 
-    private final IProductoRepository productoRepository;
+    private final IProductoDomainService productoDomainService;
+    private final ProductoMappers productoMappers;
     private final ICategoriaRepository categoriaRepository;
     private final IMarcaRepository marcaRepository;
     private final IModeloDispositivoRepository modeloRepository;
@@ -29,25 +33,27 @@ public class ProductoAppService {
     private final IUsuarioRepository usuarioRepository;
     private final ProductTrieService productTrieService;
 
-    public Page<Producto> listarProductos(String query, Pageable pageable) {
-        if (query != null && !query.trim().isEmpty()) {
-            return productoRepository.buscarProductos(query.trim(), pageable);
-        }
-        return productoRepository.findAll(pageable);
+    @Transactional(readOnly = true)
+    public Page<ProductoResponseDTO> listarProductos(String query, Pageable pageable) {
+        Page<Producto> page = productoDomainService.buscarPaginado(query, pageable);
+        return page.map(productoMappers::toResponseDTO);
     }
 
-    public List<Producto> sugerenciasTrie(String query) {
-        return productTrieService.buscar(query);
+    @Transactional(readOnly = true)
+    public List<ProductoResponseDTO> sugerenciasTrie(String query) {
+        List<Producto> encontrados = productTrieService.buscar(query);
+        return productoMappers.toResponseDTOList(encontrados);
     }
 
-    public Optional<Producto> obtenerPorId(Integer id) {
-        return productoRepository.findById(id);
+    @Transactional(readOnly = true)
+    public Optional<ProductoResponseDTO> obtenerPorId(Integer id) {
+        return productoDomainService.buscarPorId(id).map(productoMappers::toResponseDTO);
     }
 
     @Transactional
-    public Producto crearProducto(ProductoDTO dto, Integer idUsuarioOperador) {
+    public ProductoResponseDTO crearProducto(ProductoDTO dto, Integer idUsuarioOperador) {
         Categoria categoria = categoriaRepository.findById(dto.getIdCategoria())
-                .orElseThrow(() -> new IllegalArgumentException("Categoría no encontrada con id: " + dto.getIdCategoria()));
+                .orElseThrow(() -> new IllegalArgumentException("Categoría no encontrada con ID: " + dto.getIdCategoria()));
 
         Marca marca = null;
         if (dto.getIdMarca() != null) {
@@ -59,28 +65,14 @@ public class ProductoAppService {
             modelo = modeloRepository.findById(dto.getIdModeloDispositivo()).orElse(null);
         }
 
-        Producto p = new Producto();
-        p.setCodigoBarras(dto.getCodigoBarras());
-        p.setNombre(dto.getNombre());
-        p.setCategoria(categoria);
-        p.setMarca(marca);
-        p.setModeloDispositivo(modelo);
-        p.setCaracteristicas(dto.getCaracteristicas());
-        p.setColor(dto.getColor());
-        p.setPrecioCompra(dto.getPrecioCompra());
-        p.setPrecioVenta(dto.getPrecioVenta());
-        p.setStockActual(dto.getStockActual() != null ? dto.getStockActual() : 0);
-        p.setStockMinimo(dto.getStockMinimo() != null ? dto.getStockMinimo() : 5);
-        p.setImagenUrl(dto.getImagenUrl());
-        p.setActivo(dto.getActivo() != null ? dto.getActivo() : true);
+        Producto producto = productoMappers.toEntity(dto, categoria, marca, modelo);
+        Producto guardado = productoDomainService.guardarProducto(producto);
 
-        Producto guardado = productoRepository.save(p);
-
-        // Si tiene lote inicial para productos de consumo
+        // Registro de lote inicial si aplica
         if (dto.getFechaVencimiento() != null && dto.getStockActual() != null && dto.getStockActual() > 0) {
             LoteProducto lote = new LoteProducto();
             lote.setProducto(guardado);
-            lote.setCodigoLote(dto.getCodigoLote() != null ? dto.getCodigoLote() : "LOTE-INIT-" + guardado.getIdProducto());
+            lote.setCodigoLote(dto.getCodigoLote() != null && !dto.getCodigoLote().isBlank() ? dto.getCodigoLote() : "LOTE-INIT-" + guardado.getIdProducto());
             lote.setFechaVencimiento(dto.getFechaVencimiento());
             lote.setCantidadInicial(dto.getStockActual());
             lote.setCantidadDisponible(dto.getStockActual());
@@ -88,7 +80,7 @@ public class ProductoAppService {
             loteRepository.save(lote);
         }
 
-        // Registrar movimiento inicial en Kardex si hubo stock inicial
+        // Kardex inicial
         if (guardado.getStockActual() > 0 && idUsuarioOperador != null) {
             Usuario usuario = usuarioRepository.findById(idUsuarioOperador).orElse(null);
             if (usuario != null) {
@@ -104,62 +96,54 @@ public class ProductoAppService {
             }
         }
 
-        // Indexar en el árbol Trie en memoria
+        // Indexación en Árbol Trie
         productTrieService.indexarProducto(guardado);
-        log.info("Producto creado e indexado en Trie: {} (ID: {})", guardado.getNombre(), guardado.getIdProducto());
+        log.info("Producto creado e indexado con éxito: {} (ID: {})", guardado.getNombre(), guardado.getIdProducto());
 
-        return guardado;
+        return productoMappers.toResponseDTO(guardado);
     }
 
     @Transactional
-    public Producto actualizarProducto(Integer id, ProductoDTO dto) {
-        Producto p = productoRepository.findById(id)
+    public ProductoResponseDTO actualizarProducto(Integer id, ProductoDTO dto) {
+        Producto existente = productoDomainService.buscarPorId(id)
                 .orElseThrow(() -> new IllegalArgumentException("Producto no encontrado con ID: " + id));
 
+        Categoria cat = null;
         if (dto.getIdCategoria() != null) {
-            Categoria cat = categoriaRepository.findById(dto.getIdCategoria())
-                    .orElseThrow(() -> new IllegalArgumentException("Categoría inválida"));
-            p.setCategoria(cat);
+            cat = categoriaRepository.findById(dto.getIdCategoria())
+                    .orElseThrow(() -> new IllegalArgumentException("Categoría no encontrada"));
         }
 
+        Marca marca = null;
         if (dto.getIdMarca() != null) {
-            p.setMarca(marcaRepository.findById(dto.getIdMarca()).orElse(null));
+            marca = marcaRepository.findById(dto.getIdMarca()).orElse(null);
         }
 
+        ModeloDispositivo modelo = null;
         if (dto.getIdModeloDispositivo() != null) {
-            p.setModeloDispositivo(modeloRepository.findById(dto.getIdModeloDispositivo()).orElse(null));
+            modelo = modeloRepository.findById(dto.getIdModeloDispositivo()).orElse(null);
         }
 
-        if (dto.getCodigoBarras() != null) p.setCodigoBarras(dto.getCodigoBarras());
-        if (dto.getNombre() != null) p.setNombre(dto.getNombre());
-        if (dto.getCaracteristicas() != null) p.setCaracteristicas(dto.getCaracteristicas());
-        if (dto.getColor() != null) p.setColor(dto.getColor());
-        if (dto.getPrecioCompra() != null) p.setPrecioCompra(dto.getPrecioCompra());
-        if (dto.getPrecioVenta() != null) p.setPrecioVenta(dto.getPrecioVenta());
-        if (dto.getStockMinimo() != null) p.setStockMinimo(dto.getStockMinimo());
-        if (dto.getImagenUrl() != null) p.setImagenUrl(dto.getImagenUrl());
-        if (dto.getActivo() != null) p.setActivo(dto.getActivo());
-
-        Producto actualizado = productoRepository.save(p);
+        productoMappers.updateEntityFromDTO(existente, dto, cat, marca, modelo);
+        Producto actualizado = productoDomainService.actualizarProducto(existente);
         productTrieService.indexarProducto(actualizado);
-        return actualizado;
+
+        return productoMappers.toResponseDTO(actualizado);
     }
 
     @Transactional
     public void eliminarProducto(Integer id) {
-        Producto p = productoRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Producto no encontrado con ID: " + id));
-        p.setActivo(false); // Borrado lógico
-        productoRepository.save(p);
+        productoDomainService.darDeBaja(id);
         productTrieService.eliminarProducto(id);
     }
 
-    public List<Producto> obtenerAlertasStockBajo() {
-        return productoRepository.findProductosConStockBajo();
+    @Transactional(readOnly = true)
+    public List<ProductoResponseDTO> obtenerAlertasStockBajo() {
+        return productoMappers.toResponseDTOList(productoDomainService.buscarConStockBajo());
     }
 
-    public List<LoteProducto> obtenerAlertasVencimiento(int diasLimite) {
-        LocalDate limite = LocalDate.now().plusDays(diasLimite);
-        return loteRepository.findLotesProximosAVencer(limite);
+    @Transactional(readOnly = true)
+    public List<LoteProductoDTO> obtenerAlertasVencimiento(int diasLimite) {
+        return productoMappers.toLoteDTOList(productoDomainService.buscarLotesProximosAVencer(diasLimite));
     }
 }
